@@ -1,0 +1,307 @@
+mqtt:
+  sensor:
+  - name: Beacon Gateway
+    unique_id: "7526192088709"
+    state_topic: bluecharm/publish/BC57291585D4
+    value_template: >
+      {{ as_datetime(value_json.obj[0].time + '+00:00') | as_local() }}
+    json_attributes_topic: bluecharm/publish/BC57291585D4
+    json_attributes_template: >
+      {{ value_json | tojson }}
+
+automation:
+  - id: "3057270929235"
+    alias: Beacon Gateway Automation - split messages and raise events
+    triggers:
+      - entity_id: sensor.beacon_gateway
+        trigger: state
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: >
+                  {{ states.sensor.beacon_gateway.attributes.msg == "advData" }}
+            sequence:
+              - alias: "Iterate through each obj element of the json and raise a separate event for each"
+                repeat:
+                  for_each: >
+                    {{ states.sensor.beacon_gateway.attributes.obj }}
+                  sequence:
+                    - variables:
+                        message: >
+                          {{ states.sensor.beacon_gateway.attributes.obj[repeat.index - 1] }}
+                    - choose:
+                        - conditions:
+                            - condition: template
+                              value_template: >
+                                {{ message.type == 8 }}
+                          sequence:
+                            - event: beacon_battery
+                              event_data:
+                                battery_remaining: >
+                                  {% set stock_voltage = 3000 %} 
+                                  {% set voltage_range = 550 %} 
+                                  {% set current_voltage = message.vbatt %} 
+                                  {% if current_voltage >= stock_voltage %}
+                                    {% set remaining_life = 100 %}
+                                  {% elif current_voltage > (stock_voltage - voltage_range) %}
+                                    {% set remaining_life = int((current_voltage - (stock_voltage - voltage_range)) / voltage_range * 100) %}
+                                  {% else %}
+                                    {% set remaining_life = 0 %}
+                                  {% endif %}
+                                  {{ remaining_life | int }}
+                                dmac: |
+                                  {{ message.dmac }}
+                                time: |
+                                  {{ as_datetime(message.time + '+00:00') | as_local() }}
+                                time_orig: |
+                                  {{ message.time }}
+                        - conditions:
+                            - condition: template
+                              value_template: >
+                                {{ message.type == 4 }}
+                          sequence:
+                            - event: beacon_message
+                              event_data:
+                                dmac: |
+                                  {{ message.dmac }}
+                                uuid: |
+                                  {{ message.uuid }}
+                                rssi: |
+                                  {{ message.rssi }}
+                                time: |
+                                  {{ as_datetime(message.time + '+00:00') | as_local() }}
+                                time_orig: |
+                                  {{ message.time }}
+          - conditions:
+              - condition: template
+                value_template: >
+                  {{ states.sensor.beacon_gateway.attributes.msg == "alive" }}
+            sequence:
+              - variables:
+                  message: >
+                    {{ states.sensor.beacon_gateway.attributes }}
+              - event: gateway_alive
+                event_data:
+                  gmac: |
+                    {{ message.gmac }}
+                  uuid: |
+                    {{ message.gmac }}
+                  subaction: |
+                    {{ message.subaction }}
+                  wanIP: |
+                    {{ message.wanIP }}
+                  time: |
+                    {{ as_datetime(message.utc) | as_local() }}
+
+template:
+  # Red bin
+  - use_blueprint:
+      path: beacon_signal_strength_sensor.yaml
+      input:
+        uuid: !secret beacon_red_uuid
+    name: Beacon Signal Strength Red
+    unique_id: "8621916144438"
+  - use_blueprint:
+      path: beacon_vibration_sensor.yaml
+      input:
+        uuid: !secret beacon_red_uuid_alt
+    name: Beacon Vibration Red
+    unique_id: "4124010449399"
+  - use_blueprint:
+      path: beacon_battery_sensor.yaml
+      input:
+        dmac: !secret beacon_red_dmac
+    name: Beacon Battery Red
+    unique_id: "5082992911580"
+  - use_blueprint:
+      path: beacon_flip_flop_sensor.yaml
+      input:
+        uuid: !secret beacon_red_uuid
+    name: Beacon Flip Flop Red
+    unique_id: "9039533840711"
+  - use_blueprint:
+      path: beacon_presence_sensor.yaml
+      input:
+        beacon_message_count_entity: sensor.beacon_message_count_red
+    name: Beacon Presence Red
+    unique_id: "9072755331310"
+
+  # Yellow bin
+  - use_blueprint:
+      path: beacon_signal_strength_sensor.yaml
+      input:
+        uuid: !secret beacon_yellow_uuid
+    name: Beacon Signal Strength Yellow
+    unique_id: "7657732058296"
+  - use_blueprint:
+      path: beacon_vibration_sensor.yaml
+      input:
+        uuid: !secret beacon_yellow_uuid_alt
+    name: Beacon Vibration Yellow
+    unique_id: "5612050407459"
+  - use_blueprint:
+      path: beacon_battery_sensor.yaml
+      input:
+        dmac: !secret beacon_yellow_dmac
+    name: Beacon Battery Yellow
+    unique_id: "6537776304053"
+  - use_blueprint:
+      path: beacon_flip_flop_sensor.yaml
+      input:
+        uuid: !secret beacon_yellow_uuid
+    name: Beacon Flip Flop Yellow
+    unique_id: "8191683082471"
+  - use_blueprint:
+      path: beacon_presence_sensor.yaml
+      input:
+        beacon_message_count_entity: sensor.beacon_message_count_yellow
+    name: Beacon Presence Yellow
+    unique_id: "6154327514048"
+
+  # Green 1 bin
+  - use_blueprint:
+      path: beacon_signal_strength_sensor.yaml
+      input:
+        uuid: !secret beacon_green_1_uuid
+    name: Beacon Signal Strength Green 1
+    unique_id: "1367228344165"
+  - use_blueprint:
+      path: beacon_vibration_sensor.yaml
+      input:
+        uuid: !secret beacon_green_1_uuid_alt
+    name: Beacon Vibration Green 1
+    unique_id: "9436446906564"
+  - use_blueprint:
+      path: beacon_battery_sensor.yaml
+      input:
+        dmac: !secret beacon_green_1_dmac
+    name: Beacon Battery Green 1
+    unique_id: "2369216157861"
+  - use_blueprint:
+      path: beacon_flip_flop_sensor.yaml
+      input:
+        uuid: !secret beacon_green_1_uuid
+    name: Beacon Flip Flop Green 1
+    unique_id: "9096476690020"
+  - use_blueprint:
+      path: beacon_presence_sensor.yaml
+      input:
+        beacon_message_count_entity: sensor.beacon_message_count_green_1
+    name: Beacon Presence Green 1
+    unique_id: "6492998455299"
+
+  # Green 2 bin
+  - use_blueprint:
+      path: beacon_signal_strength_sensor.yaml
+      input:
+        uuid: !secret beacon_green_2_uuid
+    name: Beacon Signal Strength Green 2
+    unique_id: "4490275955562"
+  - use_blueprint:
+      path: beacon_vibration_sensor.yaml
+      input:
+        uuid: !secret beacon_green_2_uuid_alt
+    name: Beacon Vibration Green 2
+    unique_id: "9263420644057"
+  - use_blueprint:
+      path: beacon_battery_sensor.yaml
+      input:
+        dmac: !secret beacon_green_2_dmac
+    name: Beacon Battery Green 2
+    unique_id: "6274253240363"
+  - use_blueprint:
+      path: beacon_flip_flop_sensor.yaml
+      input:
+        uuid: !secret beacon_green_2_uuid
+    name: Beacon Flip Flop Green 2
+    unique_id: "8970788521205"
+  - use_blueprint:
+      path: beacon_presence_sensor.yaml
+      input:
+        beacon_message_count_entity: sensor.beacon_message_count_green_2
+    name: Beacon Presence Green 2
+    unique_id: "9968286376306"
+
+  # Gateway
+  - use_blueprint:
+      path: beacon_flip_flop_sensor.yaml
+      input:
+        uuid: !secret gateway_uuid
+    name: Beacon Flip Flop Gateway
+    unique_id: "6003268177512"
+  - binary_sensor:
+      state: >
+        {{ states('sensor.beacon_message_count_gateway') | int(0)  > 7 }}
+      device_class: "presence"
+      name: Beacon Presence Gateway
+      unique_id: "8437563012603"
+
+sensor:
+  - platform: filter
+    name: Beacon Signal Strength Smoothed Red
+    entity_id: sensor.beacon_signal_strength_red
+    filters:
+      - filter: lowpass
+        time_constant: 10
+        precision: 0
+    unique_id: "4761970311671"
+  - platform: filter
+    name: Beacon Signal Strength Smoothed Yellow
+    entity_id: sensor.beacon_signal_strength_yellow
+    filters:
+      - filter: lowpass
+        time_constant: 10
+        precision: 0
+    unique_id: "6970159188280"
+  - platform: filter
+    name: Beacon Signal Strength Smoothed Green 1
+    entity_id: sensor.beacon_signal_strength_green_1
+    filters:
+      - filter: lowpass
+        time_constant: 10
+        precision: 0
+    unique_id: "4067955128061"
+  - platform: filter
+    name: Beacon Signal Strength Smoothed Green 2
+    entity_id: sensor.beacon_signal_strength_green_2
+    filters:
+      - filter: lowpass
+        time_constant: 10
+        precision: 0
+    unique_id: "8784527310685"
+  - platform: statistics
+    name: "Beacon Message Count Red"
+    entity_id: binary_sensor.beacon_flip_flop_red
+    state_characteristic: count
+    max_age:
+      minutes: 5
+    unique_id: "8320851621313"
+  - platform: statistics
+    name: "Beacon Message Count Yellow"
+    entity_id: binary_sensor.beacon_flip_flop_yellow
+    state_characteristic: count
+    max_age:
+      minutes: 5
+    unique_id: "2255344046663"
+  - platform: statistics
+    name: "Beacon Message Count Green 1"
+    entity_id: binary_sensor.beacon_flip_flop_green_1
+    state_characteristic: count
+    max_age:
+      minutes: 5
+    unique_id: "8373837209324"
+  - platform: statistics
+    name: "Beacon Message Count Green 2"
+    entity_id: binary_sensor.beacon_flip_flop_green_2
+    state_characteristic: count
+    max_age:
+      minutes: 5
+    unique_id: "6108801059420"
+  - platform: statistics
+    name: "Beacon Message Count Gateway"
+    entity_id: binary_sensor.beacon_flip_flop_gateway
+    state_characteristic: count
+    max_age:
+      minutes: 5
+    unique_id: "7389242080696"
