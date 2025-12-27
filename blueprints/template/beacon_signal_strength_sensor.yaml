@@ -20,6 +20,7 @@ condition:
       {{ trigger.alias == "time" or (trigger.alias == "beacon" and trigger.event.data.uuid == input_uuid) }}
 sensor:
   device_class: signal_strength
+  unit_of_measurement: dBm
   state: >
     {% if trigger.alias == "beacon" %}
       {{ trigger.event.data.rssi }}
