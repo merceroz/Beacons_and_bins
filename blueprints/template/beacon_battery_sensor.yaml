@@ -1,0 +1,22 @@
+blueprint:
+  name: Beacon battery level
+  description: Creates a sensor which holds the battery level for a bluetooth beacon
+  domain: template
+  input:
+    dmac:
+      name: dmac of bluetooth beacon
+variables:
+  input_dmac: !input dmac
+trigger: 
+  - trigger: event
+    event_type: beacon_battery
+condition:
+  - condition: template
+    value_template: >
+      {{ trigger.event.data.dmac == input_dmac }}
+sensor:
+  state: >
+    {{ trigger.event.data.battery_remaining }}
+  attributes:
+    last_updated: >
+      {{ trigger.event.data.time }}
