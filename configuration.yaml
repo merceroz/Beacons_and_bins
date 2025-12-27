@@ -1,0 +1,25 @@
+# This is NOT a complete configuration file
+# It just shows the configuration relevant to this project
+# ie this is what you need to add to your configuration file
+
+homeassistant:
+  # Packages support enabled - Includes every package that is inside the packages/ directory
+  packages: !include_dir_named packages/
+
+# Example of usage of notify groups
+notify:
+  - platform: group
+    name: all_phones
+    services:
+      - service: mobile_app_gareths_iphone
+      - service: mobile_app_gareths_ipad
+      - service: mobile_app_jaynes_iphone_15
+  - platform: group
+    name: jayne
+    services:
+      - service: mobile_app_jaynes_iphone_15
+  - platform: group
+    name: gareth
+    services:
+      - service: mobile_app_gareths_iphone
+      - service: mobile_app_gareths_ipad
