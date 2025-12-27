@@ -1,0 +1,505 @@
+input_boolean:
+  #Allows you to turn the notifications off - eg when on holiday
+  send_bin_notifications:
+    name: Send Bin Notifications
+    icon: mdi:cellphone-text
+  #When set to true the alert runs - with it's recurring messages
+  #When set back to false the alert stops
+  run_the_it_is_bin_night_alert:
+    name: Run the it is bin night alert
+    icon: mdi:alert-box-outline
+  #Test sensors
+  bin_tomorrow_test234:
+    name: Bin Tomorrow Testx234
+  bin_today_test234:
+    name: Bin Today Testx234
+  beacon_presence_test234:
+    name: Beacon Presence Testx234
+  beacon_vibration_test234:
+    name: Beacon Vibration Testx234
+  bin_tomorrow_test567:
+    name: Bin Tomorrow Testx567
+  bin_today_test567:
+    name: Bin Today Testx567
+  beacon_presence_test567:
+    name: Beacon Presence Testx567
+  beacon_vibration_test567:
+    name: Beacon Vibration Testx567
+
+template:
+#read the calendar and set the 3 bin today / tomorrow binary sensors
+  - trigger:
+    - trigger: time_pattern
+      hours: "/1" 
+    - trigger: homeassistant
+      event: start
+    action:
+      - action: calendar.get_events
+        data:
+          #checking middle of the day seems to work
+          #all day events in calendar start and end midnight which means they technically cover 2 days
+          start_date_time: >
+            {{ today_at('12:00') }}
+          end_date_time: >
+            {{ today_at('13:00') }}
+        target:
+          entity_id: calendar.bin_night
+        response_variable: bins_today
+      - action: calendar.get_events
+        data:
+          start_date_time: >
+            {{ today_at('12:00') + timedelta(days=1) }}
+          end_date_time: >
+            {{ today_at('13:00') + timedelta(days=1) }}
+        target:
+          entity_id: calendar.bin_night
+        response_variable: bins_tomorrow
+    binary_sensor:
+      - name: Bin Today Green
+        unique_id: "5861818388844"
+        state: >
+          {{ bins_today['calendar.bin_night'].events | selectattr('summary', 'search', '(?i)green') | list | count > 0 }}
+      - name: Bin Today Yellow
+        unique_id: "3375964704624"
+        state: >
+          {{ bins_today['calendar.bin_night'].events | selectattr('summary', 'search', '(?i)yellow') | list | count > 0 }}
+      - name: Bin Tomorrow Green
+        unique_id: "5130669242018"
+        state: >
+          {{ bins_tomorrow['calendar.bin_night'].events | selectattr('summary', 'search', '(?i)green') | list | count > 0 }}
+      - name: Bin Tomorrow Yellow
+        unique_id: "3711226958468"
+        state: >
+          {{ bins_tomorrow['calendar.bin_night'].events | selectattr('summary', 'search', '(?i)yellow') | list | count > 0 }} 
+      - name: Bin Today Red
+        unique_id: "8211133625044"
+        state: >
+          {{ is_state('binary_sensor.bin_today_green','on') or is_state('binary_sensor.bin_today_yellow','on') }}
+      - name: Bin Tomorrow Red
+        unique_id: "1692491012311"
+        state: >
+          {{ is_state('binary_sensor.bin_tomorrow_green','on') or is_state('binary_sensor.bin_tomorrow_yellow','on') }}
+  - name: Bin Testx234
+    unique_id: "3039546570264"  
+    use_blueprint:
+      path: bin_sensor.yaml
+      input:
+        trigger_bin_tomorrow:
+          - trigger: state
+            entity_id:
+              - input_boolean.bin_tomorrow_test234
+            alias: Bin Tomorrow
+        trigger_bin_today:
+          - trigger: state
+            entity_id:
+              - input_boolean.bin_today_test234
+            alias: Bin Today
+        trigger_presence:
+          - trigger: state
+            entity_id:
+              - input_boolean.beacon_presence_test234
+            alias: Presence
+        trigger_vibration:
+          - trigger: state
+            entity_id:
+              - input_boolean.beacon_vibration_test234
+            to: "on"
+            alias: Vibration
+        sensor_bin_today: input_boolean.bin_today_test234
+        sensor_bin_tomorrow: input_boolean.bin_tomorrow_test234
+        sensor_bin_presence: input_boolean.beacon_presence_test234
+  - name: Bin Testx567
+    unique_id: "4868038609409"
+    use_blueprint:
+      path: bin_sensor.yaml
+      input:
+        trigger_bin_tomorrow:
+          - trigger: state
+            entity_id:
+              - input_boolean.bin_tomorrow_test567
+            alias: Bin Tomorrow
+        trigger_bin_today:
+          - trigger: state
+            entity_id:
+              - input_boolean.bin_today_test567
+            alias: Bin Today
+        trigger_presence:
+          - trigger: state
+            entity_id:
+              - input_boolean.beacon_presence_test567
+            alias: Presence
+        trigger_vibration:
+          - trigger: state
+            entity_id:
+              - input_boolean.beacon_vibration_test567
+            to: "on"
+            alias: Vibration
+        sensor_bin_today: input_boolean.bin_today_test567
+        sensor_bin_tomorrow: input_boolean.bin_tomorrow_test567
+        sensor_bin_presence: input_boolean.beacon_presence_test567
+  - name: Bin Red
+    unique_id: "6413581652661"
+    use_blueprint:
+      path: bin_sensor.yaml
+      input:
+        trigger_bin_tomorrow:
+          - trigger: state
+            entity_id:
+              - binary_sensor.bin_tomorrow_red
+            alias: Bin Tomorrow
+        trigger_bin_today:
+          - trigger: state
+            entity_id:
+              - binary_sensor.bin_today_red
+            alias: Bin Today
+        trigger_presence:
+          - trigger: state
+            entity_id:
+              - binary_sensor.beacon_presence_red
+            alias: Presence
+        trigger_vibration:
+          - trigger: state
+            entity_id:
+              - binary_sensor.beacon_vibration_red
+            to: "on"
+            alias: Vibration
+        sensor_bin_today: binary_sensor.bin_today_red
+        sensor_bin_tomorrow: binary_sensor.bin_tomorrow_red
+        sensor_bin_presence: binary_sensor.beacon_presence_red
+  - name: Bin Yellow
+    unique_id: "5372418286806"
+    use_blueprint:
+      path: bin_sensor.yaml
+      input:
+        trigger_bin_tomorrow:
+          - trigger: state
+            entity_id:
+              - binary_sensor.bin_tomorrow_yellow
+            alias: Bin Tomorrow
+        trigger_bin_today:
+          - trigger: state
+            entity_id:
+              - binary_sensor.bin_today_yellow
+            alias: Bin Today
+        trigger_presence:
+          - trigger: state
+            entity_id:
+              - binary_sensor.beacon_presence_yellow
+            alias: Presence
+        trigger_vibration:
+          - trigger: state
+            entity_id:
+              - binary_sensor.beacon_vibration_yellow
+            to: "on"
+            alias: Vibration
+        sensor_bin_today: binary_sensor.bin_today_yellow
+        sensor_bin_tomorrow: binary_sensor.bin_tomorrow_yellow
+        sensor_bin_presence: binary_sensor.beacon_presence_yellow
+  - name: Bin Green 1
+    unique_id: "7235289214220"
+    use_blueprint:
+      path: bin_sensor.yaml
+      input:
+        trigger_bin_tomorrow:
+          - trigger: state
+            entity_id:
+              - binary_sensor.bin_tomorrow_green
+            alias: Bin Tomorrow
+        trigger_bin_today:
+          - trigger: state
+            entity_id:
+              - binary_sensor.bin_today_green
+            alias: Bin Today
+        trigger_presence:
+          - trigger: state
+            entity_id:
+              - binary_sensor.beacon_presence_green_1
+            alias: Presence
+        trigger_vibration:
+          - trigger: state
+            entity_id:
+              - binary_sensor.beacon_vibration_green_1
+            to: "on"
+            alias: Vibration
+        sensor_bin_today: binary_sensor.bin_today_green
+        sensor_bin_tomorrow: binary_sensor.bin_tomorrow_green
+        sensor_bin_presence: binary_sensor.beacon_presence_green_1
+  - name: Bin Green 2
+    unique_id: "9586306953885"
+    use_blueprint:
+      path: bin_sensor.yaml
+      input:
+        trigger_bin_tomorrow:
+          - trigger: state
+            entity_id:
+              - binary_sensor.bin_tomorrow_green
+            alias: Bin Tomorrow
+        trigger_bin_today:
+          - trigger: state
+            entity_id:
+              - binary_sensor.bin_today_green
+            alias: Bin Today
+        trigger_presence:
+          - trigger: state
+            entity_id:
+              - binary_sensor.beacon_presence_green_2
+            alias: Presence
+        trigger_vibration:
+          - trigger: state
+            entity_id:
+              - binary_sensor.beacon_vibration_green_2
+            to: "on"
+            alias: Vibration
+        sensor_bin_today: binary_sensor.bin_today_green
+        sensor_bin_tomorrow: binary_sensor.bin_tomorrow_green
+        sensor_bin_presence: binary_sensor.beacon_presence_green_2
+  - trigger:
+    - trigger: state
+      entity_id: 
+        - sensor.bin_red
+        - sensor.bin_yellow
+        - sensor.bin_green_1
+        - sensor.bin_green_2
+        - sensor.bin_testx234
+        - sensor.bin_testx567
+    sensor:
+      - name: Bins Combined All
+        unique_id: "6303194442918"
+        # This is used to trigger the automations - this is a lagging sensor
+        # NOTE senor name CANNOT be bin_ otherwise it's self referential!
+        # if ALL bins Home --> Home
+        # if ANY bins Put Bin Out --> Put Bins Out
+        # if ALL bins On Street --> On Street
+        # if ALL bins Emptied --> Emptied
+        state: >
+          {% set state_list_unique = states.sensor
+              | selectattr('entity_id', 'search', '^sensor\.bin_')
+              | map(attribute='state')
+              | unique
+              | list 
+              | sort %}
+          {% if state_list_unique == ['Home'] %}
+          Home
+          {% elif 'Put Bin Out' in state_list_unique %}
+          Put Bin Out
+          {% elif 'On Street' in state_list_unique and 'Put Bin Out' not in state_list_unique %}
+          On Street
+          {% elif 'Emptied' in state_list_unique and 'On Street' not in state_list_unique %}
+          Emptied
+          {% endif %}
+  - trigger:
+    - trigger: state
+      entity_id: 
+        - sensor.bin_red
+        - sensor.bin_yellow
+        - sensor.bin_green_1
+        - sensor.bin_green_2
+        - sensor.bin_testx234
+        - sensor.bin_testx567
+    sensor:
+      - name: Bins Combined Any
+        unique_id: "4578009249103"
+        # This is used within the bin sensor - this is a leading sensor
+        # NOTE senor name CANNOT be bin_ otherwise it's self referential!
+        # if ALL bins Home --> Home
+        # if ANY bins Put Bin Out --> Put Bins Out
+        # if ANY bins On Street --> On Street
+        # if ANY bins Emptied --> Emptied
+        state: >
+          {% set state_list_unique = states.sensor
+              | selectattr('entity_id', 'search', '^sensor\.bin_')
+              | map(attribute='state')
+              | unique
+              | list 
+              | sort %}
+          {% if state_list_unique == ['Home'] %}
+          Home
+          {% elif 'Emptied' in state_list_unique %}
+          Emptied
+          {% elif 'On Street' in state_list_unique %}
+          On Street
+          {% elif 'Put Bin Out' in state_list_unique %}
+          Put Bin Out
+          {% endif %}
+  - trigger:
+    - trigger: state
+      entity_id: 
+        - sensor.bin_yellow
+        - sensor.bin_green_1
+        - sensor.bin_green_2
+        - sensor.bin_testx234
+        - sensor.bin_testx567
+
+#the alert
+#runs based when input_boolean.run_the_it_is_bin_night_alert is true
+alert:
+  bin_night:
+    name: Put the bins out
+    title: Put the bins out
+    message: >
+      {% set bins_to_put_out = states.sensor
+      | selectattr('entity_id', 'search', '^sensor\.bin_')
+      | selectattr('state', 'equalto', 'Put Bin Out')
+      | map(attribute='attributes.friendly_name')
+      | map('replace', 'Bin ', '')
+      | list %}
+      {% if bins_to_put_out | count > 0 %}
+      {{ 'The ' + (bins_to_put_out[:-1] | join(', ') ~ ' and ' ~ bins_to_put_out[-1] + ' bins need' if bins_to_put_out | length > 1  
+      else bins_to_put_out[0] + ' bin needs') + ' to be put out' }}
+      {% else %}
+      No bins need putting out
+      {% endif %}
+    done_message: >
+      {% set bins_on_street = states.sensor
+      | selectattr('entity_id', 'search', '^sensor\.bin_')
+      | selectattr('state', 'equalto', 'On Street')
+      | map(attribute='attributes.friendly_name')
+      | map('replace', 'Bin ', '')
+      | list %}
+      {% if bins_on_street | count > 0 %}
+      {{ 'The ' + (bins_on_street[:-1] | join(', ') ~ ' and ' ~ bins_on_street[-1] + ' bins are' if bins_on_street | length > 1 
+      else bins_on_street[0] + ' bin is') + ' on the street' }}
+      {% else %}
+      No bins are on the street
+      {% endif %}
+    entity_id: input_boolean.run_the_it_is_bin_night_alert
+    state: "on"
+    repeat:
+      - 30
+      - 30
+      - 15
+      - 15
+      - 15
+      - 15
+      - 10
+    can_acknowledge: true
+    skip_first: false
+    data:
+      actions:
+        - action: bins_are_out
+          title: The bins are out
+          icon: sfsymbols:trash
+    notifiers:
+      - all_phones
+automation:
+  - id: "9196338118396"
+    alias: Bins - bin night alerts - trigger the alert
+    description: ""
+    triggers:
+      - trigger: time
+        at: "16:00:00"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.send_bin_notifications
+        state: "on"
+    actions:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: sensor.bins_combined_all
+                state: Put Bin Out
+            sequence:
+              # trigger the alert
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.run_the_it_is_bin_night_alert
+          - conditions:
+              - condition: state
+                entity_id: sensor.bins_combined_all
+                state: On Street
+            sequence:
+              # send a notification that the bins are out without triggering the alert
+              - action: notify.all_phones
+                data:
+                  message: > 
+                    {% set bins_on_street = states.sensor
+                    | selectattr('entity_id', 'search', '^sensor\.bin_')
+                    | selectattr('state', 'equalto', 'On Street')
+                    | map(attribute='attributes.friendly_name')
+                    | map('replace', 'Bin ', '')
+                    | list %}
+                    {% if bins_on_street | count > 0 %}
+                    {{ 'The ' + (bins_on_street[:-1] | join(', ') ~ ' and ' ~ bins_on_street[-1] + ' bins are' if bins_on_street | length > 1 
+                    else bins_on_street[0] + ' bin is') + ' on the street' }}
+                    {% else %}
+                    No bins are on the street
+                    {% endif %}
+    mode: single
+  - id: "8152268063551"
+    alias: Bins - bin night alerts - end the alert
+    description: ""
+    triggers:
+      - trigger: state
+        entity_id: sensor.bins_combined_all
+        to: "On Street"
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: bins_are_out
+    conditions:
+      - condition: and
+        conditions:
+        - condition: state
+          entity_id: input_boolean.run_the_it_is_bin_night_alert
+          state: "on"
+        - condition: state
+          entity_id: input_boolean.send_bin_notifications
+          state: "on"
+    actions:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.run_the_it_is_bin_night_alert
+    mode: single
+  - id: "1150949413824"
+    alias: Bins - notify when a bin is emptied
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: 
+          - sensor.bin_red
+          - sensor.bin_yellow
+          - sensor.bin_green_1
+          - sensor.bin_green_2
+          - sensor.bin_testx234
+          - sensor.bin_testx567
+        to: "Emptied"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.send_bin_notifications
+        state: "on"
+    actions:
+      - action: notify.all_phones
+        data:
+          message: >
+            The {{ trigger.to_state.name | replace ('Bin ', '') }} bin has been emptied
+  - id: "9887542184902"
+    alias: Bins - reminder to bring the bins in
+    mode: single
+    triggers:
+      - trigger: time
+        at: "18:00:00"
+    conditions:
+      - condition: and
+        conditions:
+        - condition: state
+          entity_id: sensor.bins_combined_all
+          state: "Emptied"
+        - condition: state
+          entity_id: input_boolean.send_bin_notifications
+          state: "on"
+    actions:
+      - action: notify.all_phones
+        data:
+          message: >
+            {% set bins_to_bring_in = states.sensor
+            | selectattr('entity_id', 'search', '^sensor\.bin_')
+            | selectattr('state', 'equalto', 'Emptied')
+            | map(attribute='attributes.friendly_name')
+            | map('replace', 'Bin ', '')
+            | list %}
+            {% if bins_to_bring_in | count > 0 %}
+            {{ 'The ' + (bins_to_bring_in[:-1] | join(', ') ~ ' and ' ~ bins_to_bring_in[-1] + ' bins need' if bins_to_bring_in | length > 1 
+            else bins_to_bring_in[0] + ' bin needs') + ' bringing in' }}
+            {% else %}
+            No bins need bringing in
+            {% endif %}
