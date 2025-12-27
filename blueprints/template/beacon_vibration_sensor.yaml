@@ -1,0 +1,20 @@
+blueprint:
+  name: Beacon vibration event
+  description: Creates a sensor which holds the vibration event for a bluetooth beacon
+  domain: template
+  input:
+    uuid:
+      name: uuid of bluetooth beacon
+variables:
+  input_uuid: !input uuid
+trigger: 
+  - trigger: event
+    event_type: beacon_message
+condition:
+  - condition: template
+    value_template: >
+      {{ trigger.event.data.uuid == input_uuid }}
+binary_sensor:
+  state: "on"
+  auto_off: 10
+  device_class: "vibration"

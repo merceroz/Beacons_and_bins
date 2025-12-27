@@ -1,0 +1,21 @@
+blueprint:
+  name: Beacon Presense
+  description: Creates a sensor which holds the presense state for a bluetooth beacon
+  domain: template
+  input:
+    beacon_message_count_entity:
+      name: sensor with the beacon message count
+variables:
+  input_beacon_message_count_entity: !input beacon_message_count_entity
+binary_sensor:
+  # If the gateway is not present, eg wi-fi drops out, we cannot determine the state of the beacon
+  # so we just return the current state of the sensor
+  state: >
+    {% if not is_state('binary_sensor.beacon_presence_gateway', 'on') %}
+      {{ this.state }}
+    {% else %}
+      {{ states(input_beacon_message_count_entity) | int(0)  > 10 }}
+    {% endif %}
+  delay_off: 
+    minutes: 5
+  device_class: "presence"

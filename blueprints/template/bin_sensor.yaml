@@ -1,0 +1,55 @@
+blueprint:
+  name: Bin
+  description: Bin sensor
+  domain: template
+  input:
+    trigger_bin_tomorrow:
+    trigger_bin_today:
+    trigger_presence:
+    trigger_vibration:
+    sensor_bin_today:
+    sensor_bin_tomorrow:
+    sensor_bin_presence:
+trigger: 
+  - triggers: !input trigger_bin_tomorrow
+  - triggers: !input trigger_bin_today
+  - triggers: !input trigger_presence
+  - triggers: !input trigger_vibration
+  - triggers:
+    - trigger: event
+      event_type: mobile_app_notification_action
+      event_data:
+        action: bins_are_out
+      alias: Bins Out Phone Response
+    - trigger: state
+      entity_id:
+        - sensor.bins_combined_any
+      to: "On Street"
+      for:
+        minutes: 10
+      alias: Any Bin Put Out
+variables:
+  input_sensor_bin_today: !input sensor_bin_today
+  input_sensor_bin_tomorrow: !input sensor_bin_tomorrow
+  input_sensor_bin_presence: !input sensor_bin_presence
+sensor:
+  state: >
+    {% if trigger.alias == "Presence" and states(input_sensor_bin_presence) == "off" and (states(input_sensor_bin_today) == "on" or states(input_sensor_bin_tomorrow) == "on") %}
+      On Street
+    {% elif trigger.alias == "Bin Today" and states(input_sensor_bin_today) == "on" and states(input_sensor_bin_presence) == "off" %}
+      On Street
+    {% elif trigger.alias == "Presence" and states(input_sensor_bin_presence) == "on" %}
+      Home
+    {% elif trigger.alias == "Any Bin Put Out" and this.state == "Put Bin Out" %}
+      Home
+    {% elif trigger.alias == "Bins Out Phone Response" and this.state == "Put Bin Out" %}
+      Home
+    {% elif trigger.alias == "Bin Today" and states(input_sensor_bin_today) == "off" and this.state == "Put Bin Out" %}
+      Home
+    {% elif trigger.alias == "Bin Tomorrow" and states(input_sensor_bin_tomorrow) == "on" and this.state == "Home" %}
+      Put Bin Out
+    {% elif trigger.alias == "Vibration" and this.state == "On Street" and states(input_sensor_bin_today) == "on" %}
+      Emptied
+    {% else %}
+      {{ this.state }}
+    {% endif %}

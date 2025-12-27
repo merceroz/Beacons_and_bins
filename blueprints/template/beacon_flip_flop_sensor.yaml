@@ -1,0 +1,21 @@
+blueprint:
+  name: Beacon flip flop sensor
+  description: A sensor, the state of which, toggles between on and off, each time a bluetooth beacon message is received
+  domain: template
+  input:
+    uuid:
+      name: uuid of bluetooth beacon
+variables:
+  input_uuid: !input uuid
+trigger: 
+  - trigger: event
+    event_type: beacon_message 
+  - trigger: event
+    event_type: gateway_alive
+condition:
+  - condition: template
+    value_template: >
+      {{ trigger.event.data.uuid == input_uuid }}
+binary_sensor: 
+  state: >
+   {{ not ((this.state | default('on')) == 'on') }}

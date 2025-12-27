@@ -1,0 +1,33 @@
+blueprint:
+  name: Beacon signal strength
+  description: Creates a sensor which holds the signal strength for a bluetooth beacon
+  domain: template
+  input:
+    uuid:
+      name: uuid of bluetooth beacon
+variables:
+  input_uuid: !input uuid
+trigger: 
+  - trigger: event
+    event_type: beacon_message
+    alias: "beacon"
+  - trigger: time_pattern
+    minutes: "/1"
+    alias: "time"
+condition:
+  - condition: template
+    value_template: >
+      {{ trigger.alias == "time" or (trigger.alias == "beacon" and trigger.event.data.uuid == input_uuid) }}
+sensor:
+  device_class: signal_strength
+  state: >
+    {% if trigger.alias == "beacon" %}
+      {{ trigger.event.data.rssi }}
+    {% else %}
+      {{ this.state }}
+    {% endif %}
+  availability: >
+    {{ not (trigger.alias == "time" and this.attributes.trigger == "time") if this.state != "unknown" else false }}
+  attributes: 
+    trigger: >
+      {{ trigger.alias }}
